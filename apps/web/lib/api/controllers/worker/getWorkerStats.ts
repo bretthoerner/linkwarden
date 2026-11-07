@@ -5,6 +5,7 @@ import { WorkerStats } from "@linkwarden/types/global";
 export default async function getWorkerStats(userId: number) {
   const linkPending = await prisma.link.count({
     where: {
+      deletedAt: null,
       url: { not: null },
       lastPreserved: null,
     },
@@ -12,6 +13,7 @@ export default async function getWorkerStats(userId: number) {
 
   const linkDone = await prisma.link.count({
     where: {
+      deletedAt: null,
       lastPreserved: { not: null },
       OR: [
         { image: { not: "unavailable" } },
@@ -24,6 +26,7 @@ export default async function getWorkerStats(userId: number) {
 
   const linkFailed = await prisma.link.count({
     where: {
+      deletedAt: null,
       url: { not: null },
       lastPreserved: { not: null },
       image: "unavailable",
@@ -35,6 +38,7 @@ export default async function getWorkerStats(userId: number) {
 
   const searchPending = await prisma.link.count({
     where: {
+      deletedAt: null,
       OR: [
         { indexVersion: { not: MEILI_INDEX_VERSION } },
         { indexVersion: null },
@@ -44,6 +48,7 @@ export default async function getWorkerStats(userId: number) {
 
   const searchDone = await prisma.link.count({
     where: {
+      deletedAt: null,
       indexVersion: MEILI_INDEX_VERSION,
     },
   });

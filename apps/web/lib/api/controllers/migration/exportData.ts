@@ -8,6 +8,9 @@ export default async function exportData(userId: number) {
         include: {
           rssSubscriptions: true,
           links: {
+            where: {
+              deletedAt: null,
+            },
             omit: {
               textContent: true, // Exclude to reduce payload size
               preview: true,

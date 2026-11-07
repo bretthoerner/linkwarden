@@ -11,7 +11,11 @@ import {
   Sort,
   ViewMode,
 } from "@linkwarden/types/global";
-import { useArchiveAction, useBulkDeleteLinks } from "@linkwarden/router/links";
+import {
+  useArchiveAction,
+  useBulkDeleteLinks,
+  useBulkRestoreLinks,
+} from "@linkwarden/router/links";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +36,7 @@ type Props = {
   editMode?: boolean;
   setEditMode?: (mode: boolean) => void;
   links: LinkIncludingShortenedCollectionAndTags[];
+  isTrash?: boolean;
 };
 
 const LinkListOptions = ({
@@ -44,11 +49,13 @@ const LinkListOptions = ({
   editMode,
   setEditMode,
   links,
+  isTrash,
 }: Props) => {
   const { selectedIds, setSelected, clearSelected, selectionCount } =
     useLinkStore();
 
   const deleteLinksById = useBulkDeleteLinks();
+  const restoreLinksById = useBulkRestoreLinks();
   const refreshPreservations = useArchiveAction();
 
   const router = useRouter();
@@ -85,6 +92,26 @@ const LinkListOptions = ({
           clearSelected();
           setEditMode?.(false);
           toast.success(t("deleted"));
+        }
+      },
+    });
+  };
+
+  const bulkRestoreLinks = async () => {
+    const ids = Object.keys(selectedIds).map(Number);
+
+    await restoreLinksById.mutateAsync(ids, {
+      onSettled: (_data, error) => {
+        if (error) {
+          toast.error(error.message);
+        } else {
+          clearSelected();
+          setEditMode?.(false);
+          toast.success(
+            ids.length === 1
+              ? t("link_restored")
+              : t("links_restored", { count: ids.length })
+          );
         }
       },
     });
@@ -173,48 +200,70 @@ const LinkListOptions = ({
             )}
           </div>
           <div className="flex gap-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setBulkRefreshPreservationsModal(true)}
-                    disabled={selectionCount === 0}
-                  >
-                    <i className="bi-arrow-clockwise" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t("refresh_preserved_formats")}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {isTrash ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => bulkRestoreLinks()}
+                      disabled={selectionCount === 0}
+                    >
+                      <i className="bi-arrow-counterclockwise" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t("restore")}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setBulkRefreshPreservationsModal(true)}
+                        disabled={selectionCount === 0}
+                      >
+                        <i className="bi-arrow-clockwise" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t("refresh_preserved_formats")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setBulkEditLinksModal(true)}
-                    variant="ghost"
-                    size="icon"
-                    disabled={selectionCount === 0}
-                  >
-                    <i className="bi-pencil-square" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t("edit")}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setBulkEditLinksModal(true)}
+                        variant="ghost"
+                        size="icon"
+                        disabled={selectionCount === 0}
+                      >
+                        <i className="bi-pencil-square" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t("edit")}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
 
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={(e) => {
-                      e.shiftKey
+                      e.shiftKey || !isTrash
                         ? bulkDeleteLinks()
                         : setBulkDeleteLinksModal(true);
                     }}
@@ -226,7 +275,9 @@ const LinkListOptions = ({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p> {t("delete")}</p>
+                  <p>
+                    {isTrash ? t("delete_permanently") : t("delete")}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

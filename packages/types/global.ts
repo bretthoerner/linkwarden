@@ -20,11 +20,13 @@ export interface LinkIncludingShortenedCollectionAndTags
     | "updatedAt"
     | "lastPreserved"
     | "importDate"
+    | "deletedAt"
   > {
   id?: number;
   createdAt?: string;
   importDate?: string;
   lastPreserved?: string | Date | null;
+  deletedAt?: string | Date | null;
   collectionId?: number;
   tags: Tag[];
   pinnedBy?: {
@@ -109,6 +111,7 @@ export type LinkRequestQuery = {
   collectionId?: number;
   tagId?: number;
   pinnedOnly?: boolean;
+  trashedOnly?: boolean;
   searchQueryString?: string;
 };
 

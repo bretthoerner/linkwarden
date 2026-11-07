@@ -1,6 +1,7 @@
 import { prisma } from "@linkwarden/prisma";
 import { LinkRequestQuery, Order, Sort } from "@linkwarden/types/global";
 import { meiliClient } from "@linkwarden/lib/meilisearchClient";
+import { cleanupExpiredTrash } from "@linkwarden/lib/cleanupExpiredTrash";
 import {
   buildMeiliFilters,
   buildMeiliQuery,
@@ -63,7 +64,15 @@ export default async function searchLinks({
   const pinnedCondition =
     query.pinnedOnly && userId ? { pinnedBy: { some: { id: userId } } } : {};
 
-  if (meiliClient && query.searchQueryString) {
+  if (query.trashedOnly) {
+    await cleanupExpiredTrash().catch(() => {});
+  }
+
+  const deletedAtCondition = query.trashedOnly
+    ? { deletedAt: { not: null } }
+    : { deletedAt: null };
+
+  if (meiliClient && query.searchQueryString && !query.trashedOnly) {
     const tokens = parseSearchTokens(query.searchQueryString);
     const meiliQuery = buildMeiliQuery(tokens);
 
@@ -110,6 +119,7 @@ export default async function searchLinks({
       where: {
         id: { in: meiliIds },
         AND: [
+          deletedAtCondition,
           ...accessCondition,
           ...collectionCondition,
           {
@@ -196,6 +206,7 @@ export default async function searchLinks({
     cursor: query.cursor ? { id: query.cursor } : undefined,
     where: {
       AND: [
+        deletedAtCondition,
         ...accessCondition,
         ...collectionCondition,
         {

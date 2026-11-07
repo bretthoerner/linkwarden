@@ -19,7 +19,7 @@ export default async function getPublicCollection(id: number) {
         },
       },
       _count: {
-        select: { links: true },
+        select: { links: { where: { deletedAt: null } } },
       },
     },
   });

@@ -26,6 +26,7 @@ export default async function getDashboardData(userId: number) {
       prisma.link.count({
         where: {
           AND: [
+            { deletedAt: null },
             { collectionId: { in: accessibleCollectionIds } },
             { pinnedBy: { some: { id: userId } } },
           ],
@@ -61,6 +62,7 @@ export default async function getDashboardData(userId: number) {
         take: 16,
         where: {
           AND: [
+            { deletedAt: null },
             { collectionId: { in: accessibleCollectionIds } },
             { pinnedBy: { some: { id: userId } } },
           ],
@@ -82,6 +84,7 @@ export default async function getDashboardData(userId: number) {
     ? prisma.link.findMany({
         take: 16,
         where: {
+          deletedAt: null,
           collectionId: { in: accessibleCollectionIds },
         },
         omit: { textContent: true },
@@ -104,7 +107,7 @@ export default async function getDashboardData(userId: number) {
   const collectionPromises = collectionIds.map((colId) =>
     (accessibleCollectionIdSet.has(colId)
       ? prisma.link.findMany({
-          where: { collectionId: colId },
+          where: { collectionId: colId, deletedAt: null },
           take: 16,
           omit: { textContent: true },
           include: {

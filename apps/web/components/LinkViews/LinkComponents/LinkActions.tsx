@@ -2,7 +2,11 @@ import { useState } from "react";
 import { LinkIncludingShortenedCollectionAndTags } from "@linkwarden/types/global";
 import usePermissions from "@/hooks/usePermissions";
 import DeleteLinkModal from "@/components/ModalContent/DeleteLinkModal";
-import { useDeleteLink, useUpdateArchive } from "@linkwarden/router/links";
+import {
+  useDeleteLink,
+  useRestoreLink,
+  useUpdateArchive,
+} from "@linkwarden/router/links";
 import toast from "react-hot-toast";
 import LinkModal from "@/components/ModalContent/LinkModal";
 import { useRouter } from "next/router";
@@ -26,6 +30,7 @@ type Props = {
   t: TFunction<"translation", undefined>;
   className?: string;
   ghost?: boolean;
+  inline?: boolean;
 };
 
 export default function LinkActions({
@@ -35,6 +40,7 @@ export default function LinkActions({
   setLinkModal,
   className,
   ghost,
+  inline,
 }: Props) {
   const permissions = usePermissions(link.collection.id as number);
 
@@ -52,6 +58,7 @@ export default function LinkActions({
     useState(false);
 
   const deleteLink = useDeleteLink({ toast, t });
+  const restoreLink = useRestoreLink({ toast, t });
 
   const updateArchive = async () => {
     const load = toast.loading(t("sending_request"));
@@ -66,6 +73,8 @@ export default function LinkActions({
     }
   };
 
+  const isAlreadyPinned = Boolean(link?.pinnedBy && link.pinnedBy[0]);
+
   return (
     <>
       {isPublicRoute ? (
@@ -75,8 +84,105 @@ export default function LinkActions({
           className={clsx(className, "cursor-pointer")}
           onClick={() => setLinkModal(true)}
         >
-          <i title="More" className="bi-info-circle text-xl" />
+          <i title={t("show_link_details")} className="bi-info-circle text-xl" />
         </Button>
+      ) : inline ? (
+        <div className={clsx("flex items-center gap-1", className)}>
+          {!link.deletedAt && (
+            <Button
+              variant="simple"
+              size="icon"
+              className="cursor-pointer text-neutral"
+              onClick={(e) => {
+                e.stopPropagation();
+                pinLink(link);
+              }}
+            >
+              <i
+                title={isAlreadyPinned ? t("unpin") : t("pin_to_dashboard")}
+                className={clsx(
+                  "text-xl",
+                  isAlreadyPinned ? "bi-pin-fill" : "bi-pin"
+                )}
+              />
+            </Button>
+          )}
+
+          <Button
+            variant="simple"
+            size="icon"
+            className="cursor-pointer text-neutral"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLinkModal(true);
+            }}
+          >
+            <i
+              title={t("show_link_details")}
+              className="bi-info-circle text-xl"
+            />
+          </Button>
+
+          {!link.deletedAt &&
+            (permissions === true || permissions?.canUpdate) && (
+              <Button
+                variant="simple"
+                size="icon"
+                className="cursor-pointer text-neutral"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditLinkModal(true);
+                }}
+              >
+                <i
+                  title={t("edit_link")}
+                  className="bi-pencil-square text-xl"
+                />
+              </Button>
+            )}
+
+          {link.deletedAt &&
+            (permissions === true || permissions?.canDelete) && (
+              <Button
+                variant="simple"
+                size="icon"
+                className="cursor-pointer text-neutral hover:text-primary"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await restoreLink.mutateAsync(link.id as number);
+                  toast.success(t("link_restored"));
+                }}
+              >
+                <i
+                  title={t("restore")}
+                  className="bi-arrow-counterclockwise text-xl"
+                />
+              </Button>
+            )}
+
+          {(permissions === true || permissions?.canDelete) && (
+            <Button
+              variant="simple"
+              size="icon"
+              className="cursor-pointer text-neutral hover:text-error"
+              onClick={async (e) => {
+                e.stopPropagation();
+                await deleteLink.mutateAsync(link.id as number);
+                toast.success(
+                  link.deletedAt ? t("deleted") : t("moved_to_trash")
+                );
+              }}
+            >
+              <i
+                title={link.deletedAt ? t("delete_permanently") : t("delete")}
+                className={clsx(
+                  "bi-trash text-xl",
+                  link.deletedAt && "text-error"
+                )}
+              />
+            </Button>
+          )}
+        </div>
       ) : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -92,13 +198,28 @@ export default function LinkActions({
           </DropdownMenuTrigger>
 
           <DropdownMenuContent sideOffset={4} align="end">
-            <DropdownMenuItem onSelect={() => pinLink(link)}>
-              <i className="bi-pin" />
+            {!link.deletedAt && (
+              <DropdownMenuItem onSelect={() => pinLink(link)}>
+                <i className="bi-pin" />
 
-              {link.pinnedBy && link.pinnedBy.length > 0
-                ? t("unpin")
-                : t("pin_to_dashboard")}
-            </DropdownMenuItem>
+                {link.pinnedBy && link.pinnedBy.length > 0
+                  ? t("unpin")
+                  : t("pin_to_dashboard")}
+              </DropdownMenuItem>
+            )}
+
+            {link.deletedAt &&
+              (permissions === true || permissions?.canDelete) && (
+                <DropdownMenuItem
+                  onSelect={async () => {
+                    await restoreLink.mutateAsync(link.id as number);
+                    toast.success(t("link_restored"));
+                  }}
+                >
+                  <i className="bi-arrow-counterclockwise" />
+                  {t("restore")}
+                </DropdownMenuItem>
+              )}
 
             <DropdownMenuItem onSelect={() => setLinkModal(true)}>
               <i className="bi-info-circle" />
@@ -106,13 +227,14 @@ export default function LinkActions({
               {t("show_link_details")}
             </DropdownMenuItem>
 
-            {(permissions === true || permissions?.canUpdate) && (
-              <DropdownMenuItem onSelect={() => setEditLinkModal(true)}>
-                <i className="bi-pencil-square" />
+            {!link.deletedAt &&
+              (permissions === true || permissions?.canUpdate) && (
+                <DropdownMenuItem onSelect={() => setEditLinkModal(true)}>
+                  <i className="bi-pencil-square" />
 
-                {t("edit_link")}
-              </DropdownMenuItem>
-            )}
+                  {t("edit_link")}
+                </DropdownMenuItem>
+              )}
 
             {(permissions === true || permissions?.canDelete) && (
               <>
@@ -120,16 +242,20 @@ export default function LinkActions({
                 <DropdownMenuItem
                   className="text-error"
                   onClick={async (e) => {
-                    if (e.shiftKey) {
+                    if (link.deletedAt || e.shiftKey) {
                       await deleteLink.mutateAsync(link.id as number);
+                      toast.success(
+                        link.deletedAt ? t("deleted") : t("moved_to_trash")
+                      );
                     } else {
-                      setDeleteLinkModal(true);
+                      await deleteLink.mutateAsync(link.id as number);
+                      toast.success(t("moved_to_trash"));
                     }
                   }}
                 >
                   <i className="bi-trash" />
 
-                  {t("delete")}
+                  {link.deletedAt ? t("delete_permanently") : t("delete")}
                 </DropdownMenuItem>
               </>
             )}

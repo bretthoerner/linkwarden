@@ -52,6 +52,7 @@ export default async function postLink(
 
     const existingLink = await prisma.link.findFirst({
       where: {
+        deletedAt: null,
         OR: [{ url: urlWithWww }, { url: urlWithoutWww }],
         collection: {
           ownerId: userId,

@@ -3,6 +3,7 @@ import { startIndexing } from "./workers/linkIndexing";
 import { linkProcessing } from "./workers/linkProcessing";
 import { migrationWorker } from "./workers/migrationWorker";
 import { startRSSPolling } from "./workers/rssPolling";
+import { startTrashCleanup } from "./workers/trashCleanup";
 import { trialEndEmailWorker } from "./workers/trialEndEmailWorker";
 
 const workerIntervalInSeconds =
@@ -16,6 +17,7 @@ async function init() {
   linkProcessing(workerIntervalInSeconds);
   autoTagPreservedLinks(workerIntervalInSeconds);
   startIndexing(workerIntervalInSeconds);
+  startTrashCleanup();
   // trialEndEmailWorker();
 }
 

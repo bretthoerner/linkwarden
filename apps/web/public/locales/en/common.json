@@ -563,5 +563,17 @@
   "sign_in_to_linkwarden": "Welcome back!",
   "or": "Or",
   "continue_with_apple": "Continue with Apple",
-  "continue_with_google": "Continue with Google"
+  "continue_with_google": "Continue with Google",
+  "trash": "Trash",
+  "trash_desc": "Links in trash are automatically deleted after 30 days",
+  "trash_is_empty": "Trash is Empty",
+  "trash_is_empty_desc": "Deleted links will appear here for 30 days before being permanently removed.",
+  "moved_to_trash": "Moved to Trash.",
+  "restore": "Restore",
+  "link_restored": "Link restored.",
+  "links_restored": "{{count}} Links restored.",
+  "delete_permanently": "Delete Permanently",
+  "empty_trash": "Empty Trash",
+  "empty_trash_confirmation_desc": "Are you sure you want to permanently delete all links in the Trash? This action is irreversible!",
+  "trash_emptied": "Trash emptied."
 }

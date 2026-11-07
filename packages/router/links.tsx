@@ -43,6 +43,7 @@ const useLinks = (params: LinkRequestQuery = {}, auth?: MobileAuth) => {
       collectionId: params.collectionId,
       tagId: params.tagId,
       pinnedOnly: params.pinnedOnly ?? undefined,
+      trashedOnly: params.trashedOnly ?? undefined,
       searchQueryString: params.searchQueryString,
     });
   }, [
@@ -50,6 +51,7 @@ const useLinks = (params: LinkRequestQuery = {}, auth?: MobileAuth) => {
     params.collectionId,
     params.tagId,
     params.pinnedOnly,
+    params.trashedOnly,
     params.searchQueryString,
   ]);
 
@@ -813,6 +815,143 @@ const useDeleteLink = ({
         };
       });
 
+      queryClient.invalidateQueries({ queryKey: ["links"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["publicLinks"] });
+    },
+  });
+};
+
+const useRestoreLink = ({
+  auth,
+  Alert,
+  toast,
+  t,
+}: {
+  auth?: MobileAuth;
+  Alert?: any;
+  toast?: typeof toaster;
+  t?: TFunction;
+} = {}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(
+        (auth?.instance ? auth?.instance : "") + `/api/v1/links/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            ...(auth?.session
+              ? { Authorization: `Bearer ${auth.session}` }
+              : {}),
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.response);
+
+      return data.response;
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["links"] });
+
+      const previousLinks = queryClient.getQueriesData({
+        queryKey: ["links"],
+      });
+
+      queryClient.setQueriesData({ queryKey: ["links"] }, (oldData: any) =>
+        removeLinkFromInfiniteData(oldData, id)
+      );
+
+      return { previousLinks };
+    },
+    onError: (error, _variables, context) => {
+      if (toast && t) toast.error(t(error.message));
+      else if (Alert)
+        Alert.alert("Error", "There was an error restoring the link.");
+
+      if (!context) return;
+
+      context.previousLinks?.forEach(([queryKey, data]: [unknown, unknown]) => {
+        queryClient.setQueryData(queryKey as QueryKey, data);
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["links"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["publicLinks"] });
+    },
+  });
+};
+
+const useBulkRestoreLinks = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (linkIds: number[]) => {
+      const response = await fetch("/api/v1/links", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ linkIds }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.response);
+
+      return linkIds;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueriesData({ queryKey: ["links"] }, (oldData: any) => {
+        if (!oldData) return undefined;
+        return {
+          pages: oldData.pages.map((page: any) => ({
+            links: page.links.filter((item: any) => !data.includes(item.id)),
+            nextCursor: page.nextCursor,
+          })),
+          pageParams: oldData.pageParams,
+        };
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["links"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["publicLinks"] });
+    },
+  });
+};
+
+const useEmptyTrash = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/v1/links", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ emptyTrash: true }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.response);
+
+      return data.response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["links"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
@@ -1202,7 +1341,10 @@ export {
   useAddLink,
   useUpdateLink,
   useDeleteLink,
+  useRestoreLink,
   useBulkDeleteLinks,
+  useBulkRestoreLinks,
+  useEmptyTrash,
   useUploadFile,
   useGetLink,
   useBulkEditLinks,

@@ -9,7 +9,9 @@ async function withLinkCounts<T extends Tag>(
 
   const counts = await prisma.$transaction(
     tags.map((tag) =>
-      prisma.link.count({ where: { tags: { some: { id: tag.id } } } })
+      prisma.link.count({
+        where: { deletedAt: null, tags: { some: { id: tag.id } } },
+      })
     )
   );
 

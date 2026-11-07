@@ -22,6 +22,9 @@ export default async function search(
       pinnedOnly: req.query.pinnedOnly
         ? req.query.pinnedOnly === "true"
         : undefined,
+      trashedOnly: req.query.trashedOnly
+        ? req.query.trashedOnly === "true"
+        : undefined,
       searchQueryString: req.query.searchQueryString
         ? (req.query.searchQueryString as string)
         : undefined,

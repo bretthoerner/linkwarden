@@ -18,6 +18,7 @@ export default async function getLinkBatchFairly({
   const baseLinkWhere: Prisma.LinkWhereInput =
     mode === "tags"
       ? {
+          deletedAt: null,
           url: { not: null },
           type: "url",
           lastPreserved: { not: null },
@@ -33,6 +34,7 @@ export default async function getLinkBatchFairly({
           },
         }
       : {
+          deletedAt: null,
           url: { not: null },
           lastPreserved: null,
         };

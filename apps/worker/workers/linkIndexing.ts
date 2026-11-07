@@ -110,6 +110,9 @@ export async function startIndexing(interval = 10) {
       where: {
         AND: [
           {
+            deletedAt: null,
+          },
+          {
             OR: [
               { indexVersion: { not: MEILI_INDEX_VERSION } },
               { indexVersion: null },
@@ -221,6 +224,7 @@ export async function startIndexing(interval = 10) {
 
     const indexesLeft = await prisma.link.count({
       where: {
+        deletedAt: null,
         OR: [
           { indexVersion: { not: MEILI_INDEX_VERSION } },
           { indexVersion: null },

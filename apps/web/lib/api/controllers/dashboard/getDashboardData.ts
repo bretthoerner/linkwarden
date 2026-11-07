@@ -19,6 +19,9 @@ export default async function getDashboardData(
     where: {
       AND: [
         {
+          deletedAt: null,
+        },
+        {
           collectionId: { in: accessibleCollectionIds },
         },
         {
@@ -40,6 +43,7 @@ export default async function getDashboardData(
   const recentlyAddedLinks = await prisma.link.findMany({
     take: 10,
     where: {
+      deletedAt: null,
       collectionId: { in: accessibleCollectionIds },
     },
     include: {

@@ -3,7 +3,7 @@
 # ==============================================================================
 FROM docker.io/rust:1.96-bookworm AS monolith-builder
 ARG MONOLITH_VERSION=2.10.1
-RUN set -eux && cargo install --locked monolith@${MONOLITH_VERSION}
+RUN set -eux && cargo install --locked --git https://github.com/Y2Z/monolith.git --tag v${MONOLITH_VERSION} monolith
 
 # ==============================================================================
 # Stage 2: App Builder (Where the heavy building happens)
@@ -31,8 +31,7 @@ COPY packages/router/package.json ./packages/router/
 COPY packages/types/package.json ./packages/types/
 
 # Install everything needed to build
-RUN --mount=type=cache,sharing=locked,target=/root/.yarn/berry/cache \
-    yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
+RUN yarn workspaces focus linkwarden @linkwarden/web @linkwarden/worker
 
 # Copy source and build
 COPY . .

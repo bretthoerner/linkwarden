@@ -10,6 +10,7 @@ export default async function getLinkById(linkId: number) {
   const link = await prisma.link.findFirst({
     where: {
       id: linkId,
+      deletedAt: null,
       collection: {
         isPublic: true,
       },

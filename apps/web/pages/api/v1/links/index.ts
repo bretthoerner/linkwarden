@@ -4,6 +4,7 @@ import postLink from "@/lib/api/controllers/links/postLink";
 import { LinkRequestQuery } from "@linkwarden/types/global";
 import verifyUser from "@/lib/api/verifyUser";
 import deleteLinksById from "@/lib/api/controllers/links/bulk/deleteLinksById";
+import restoreLinksById from "@/lib/api/controllers/links/bulk/restoreLinksById";
 import updateLinks from "@/lib/api/controllers/links/bulk/updateLinks";
 
 export default async function links(req: NextApiRequest, res: NextApiResponse) {
@@ -21,6 +22,9 @@ export default async function links(req: NextApiRequest, res: NextApiResponse) {
       tagId: req.query.tagId ? Number(req.query.tagId as string) : undefined,
       pinnedOnly: req.query.pinnedOnly
         ? req.query.pinnedOnly === "true"
+        : undefined,
+      trashedOnly: req.query.trashedOnly
+        ? req.query.trashedOnly === "true"
         : undefined,
       searchQueryString: req.query.searchQueryString
         ? (req.query.searchQueryString as string)
@@ -57,6 +61,17 @@ export default async function links(req: NextApiRequest, res: NextApiResponse) {
     return res.status(updated.status).json({
       response: updated.response,
     });
+  } else if (req.method === "PATCH") {
+    if (process.env.NEXT_PUBLIC_DEMO === "true")
+      return res.status(400).json({
+        response:
+          "This action is disabled because this is a read-only demo of Linkwarden.",
+      });
+
+    const restored = await restoreLinksById(user.id, req.body.linkIds);
+    return res.status(restored.status).json({
+      response: restored.response,
+    });
   } else if (req.method === "DELETE") {
     if (process.env.NEXT_PUBLIC_DEMO === "true")
       return res.status(400).json({
@@ -64,7 +79,10 @@ export default async function links(req: NextApiRequest, res: NextApiResponse) {
           "This action is disabled because this is a read-only demo of Linkwarden.",
       });
 
-    const deleted = await deleteLinksById(user.id, req.body.linkIds);
+    const deleted = await deleteLinksById(user.id, req.body?.linkIds, {
+      permanent: Boolean(req.body?.permanent),
+      emptyTrash: Boolean(req.body?.emptyTrash),
+    });
     return res.status(deleted.status).json({
       response: deleted.response,
     });

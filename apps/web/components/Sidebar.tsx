@@ -148,6 +148,13 @@ export default function Sidebar({
               sidebarIsCollapsed={collapsed}
             />
             <SidebarHighlightLink
+              title={t("trash")}
+              href={`/links/trash`}
+              icon={"bi-trash"}
+              active={active === `/links/trash`}
+              sidebarIsCollapsed={collapsed}
+            />
+            <SidebarHighlightLink
               title={t("collections")}
               href={`/collections`}
               icon={"bi-folder"}

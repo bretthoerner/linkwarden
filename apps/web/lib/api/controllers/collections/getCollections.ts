@@ -40,6 +40,7 @@ export default async function getCollection(userId: number) {
       ? await prisma.link.groupBy({
           by: ["collectionId"],
           where: {
+            deletedAt: null,
             collectionId: { in: collectionsWithoutCount.map((c) => c.id) },
           },
           _count: { _all: true },

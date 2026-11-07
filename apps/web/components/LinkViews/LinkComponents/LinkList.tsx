@@ -12,7 +12,6 @@ import { cn, isPWA } from "@/lib/utils";
 import toast from "react-hot-toast";
 import LinkTypeBadge from "./LinkTypeBadge";
 import useLocalSettingsStore from "@/store/localSettings";
-import LinkPin from "./LinkPin";
 import { atLeastOneFormatAvailable } from "@linkwarden/lib/formatStats";
 import LinkFormats from "./LinkFormats";
 import openLink from "@/lib/client/openLink";
@@ -96,7 +95,7 @@ function LinkList({
 
           <div className="w-[calc(100%-56px)] ml-2">
             {show.name && (
-              <div className="flex gap-1 mr-20">
+              <div className="flex gap-1 mr-40">
                 <p className="truncate text-primary">
                   {unescapeString(link.name)}
                 </p>
@@ -125,12 +124,12 @@ function LinkList({
             </div>
           </div>
         </div>
-        {!isPublicRoute && <LinkPin link={link} />}
         <LinkActions
           link={link}
           linkModal={linkModal}
           t={t}
           setLinkModal={(e) => setLinkModal(e)}
+          inline
           className="absolute top-3 right-3 group-hover:opacity-100 group-focus-within:opacity-100 opacity-0 duration-100 text-neutral z-20"
         />
       </div>
